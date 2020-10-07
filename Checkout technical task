@@ -1,0 +1,87 @@
+--****************************************************--
+--** Transform Pipeline starts here**--
+
+-- **Create & populate denormalised landing schema (private) & tables. Then populate with records using insert statements from source tables 
+
+USE [LandingDB] -- I've assumed this as the name of the destination db for the transform pipeline
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+--**Creates dim and fact tables for users source data
+CREATE TABLE [Landing].[dim_users](
+	[id] [int] NOT NULL,
+	[PostCode] [nvarchar](50) NULL,
+	CONSTRAINT [id_pk] PRIMARY KEY (id)
+)
+
+			CREATE INDEX idx_id
+			ON [dim_users] ([id]);
+
+
+CREATE TABLE [Landing].[fact_users](
+	[id] [int] NOT NULL,
+	EffectiveDate [datetime] NULL,
+	CONSTRAINT [id_pk] PRIMARY KEY (id)
+)
+	
+			CREATE INDEX idx_id1
+			ON [fact_users] ([id]);
+
+
+--**Inserts user data into created tables 
+INSERT INTO [Landing].[dim_users]
+(SELECT id
+, postcode 
+FROM [SourceDB].[users_extract])
+
+
+INSERT INTO [Landing].[fact_users]
+(SELECT id
+, GETDATE() AS EffectiveDate 
+FROM [SourceDB].[users_extract])
+
+
+
+
+--**Creates dim and fact tables for pageviews source data
+CREATE TABLE [Landing].[dim_pageviews](
+	[userid] [int] NOT NULL,
+	[url] [nvarchar](75) NULL,
+	CONSTRAINT [id_pk] PRIMARY KEY (userid)
+)
+			CREATE INDEX idx_userid
+			ON [dim_pageviews] ([userid]);
+
+CREATE TABLE [Landing].[fact_pageviews](
+	[userid] [int] NOT NULL,
+	EffectiveDate [datetime] NULL,
+	CONSTRAINT [id_pk] PRIMARY KEY (userid)
+)
+			CREATE INDEX idx_userid1
+			ON [fact_pageviews] ([userid]);
+
+
+
+--**Inserts pageview data into created tables 
+INSERT INTO [Landing].[dim_pageviews]
+(SELECT userid
+, url 
+FROM [SourceDB].[pageviews_extract]
+
+
+INSERT INTO [Landing].[fact_pageviews]
+(SELECT userid
+, GETDATE() AS EffectiveDate 
+FROM [SourceDB].[pageviews_extract])
+
+
+GO
+
+
+--** Transform Pipeline ends here**--
